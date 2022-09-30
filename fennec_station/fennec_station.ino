@@ -8,6 +8,8 @@
 
 LiquidCrystal_I2C lcd(LCDADDR, 16, 2);
 DHT dht(DHTPIN, DHTTYPE);
+
+int passedTime = 0;
  
 void setup() {
   dht.begin();
@@ -15,6 +17,8 @@ void setup() {
 
   printWelcomeMessage();
   printTemplate();
+
+  Serial.begin(9600);
 }
  
 void loop() {
@@ -28,4 +32,19 @@ void loop() {
   }
 
   delay(2000);
+  passedTime += 2;
+
+  if (passedTime == 10) {
+    passedTime = 0;
+    if (Serial.available()) {    
+      lcd.clear();
+      lcd.print("ETH price");
+      lcd.setCursor(0, 1);
+      while (Serial.available() > 0) {
+        lcd.write(Serial.read());
+      }
+      delay(10000);
+      printTemplate();   
+    }
+  }
 }
