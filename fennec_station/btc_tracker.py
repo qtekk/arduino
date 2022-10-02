@@ -2,26 +2,35 @@ import requests
 import serial
 import json
 import time
+import platform
 from bs4 import BeautifulSoup
 
-s = serial.Serial('/dev/ttyUSB0', baudrate=9600)
-time.sleep(2)
-i = 0
+sys = platform.system()
+port = "/dev/ttyUSB0" if sys == "Linux" else "COM8"
 
-if s.isOpen():
+print("System:", sys) 
+print("Port:", port)
+
+serialPort = serial.Serial(port, baudrate=9600)
+time.sleep(2)
+
+if serialPort.isOpen():
   while (True):
     tries = 3
     for i in range(tries):
-        try:
-          req = requests.get("https://api.bitfinex.com/v1/pubticker/ethusd")
-          scrap = BeautifulSoup(req.text, 'html.parser').get_text()
-          resultJson = json.loads(scrap)
-          print(resultJson)
-          s.write(str(resultJson["last_price"]).encode())
-          time.sleep(20)
-        except KeyError as e:
-            if i < tries - 1: # i is zero indexed
-              continue
-            else:
-              raise
-        break 
+      try:
+        req = requests.get("https://api.cryptowat.ch/markets/zonda/ethpln/summary")
+        scrap = BeautifulSoup(req.text, 'html.parser').get_text()
+        resultJson = json.loads(scrap)
+        print(resultJson)
+        lastPrice = resultJson["result"]["price"]["last"]
+        changePercentage = resultJson["result"]["price"]["change"]["percentage"]
+        message = "ETH-PLN " + "{:.2%}".format(changePercentage) + "|" + str(lastPrice) + "|"
+        serialPort.write(message.encode())
+        time.sleep(20)
+      except KeyError as e:
+        if i < tries - 1:
+          continue
+        else:
+          raise
+      break 
